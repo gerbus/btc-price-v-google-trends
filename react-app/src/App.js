@@ -14,35 +14,14 @@ class App extends Component {
 
     // Class members
     this.timeout = null;
-    this.bitcoinLabels = [];
-    this.bitcoinData = [];
-    this.searchLabels = [];
-    this.searchData = [];
-    //this.startTime = moment("2013-01-01","YYYY-MM-DD");
-    this.endTime = moment();
-    this.searchKeyword = "bitcoin bubble";
-    
     this.handleKeyword = this.handleKeyword.bind(this);
     this.handleStartDateChange = this.handleStartDateChange.bind(this);
     
     // React component state
     this.state = {
+      searchKeyword: "bitcoin bubble",
       startTime: moment("2013-01-01","YYYY-MM-DD"),
-      chartData: {
-        labels: [],
-        datasets: [{ 
-          label: "Bitcoin Price", 
-          data: [],
-          backgroundColor: "rgba(220,200,0,0.4)",
-          yAxisID: 'bitcoin'
-        },
-        { 
-          label: "", 
-          data: [],
-          backgroundColor: "rgba(0,127,255,0.4)",
-          yAxisID: 'search'
-        }]
-      }
+      endTime: moment()
     };
   }
   render() {
@@ -89,13 +68,9 @@ class App extends Component {
           </div>
         </div>
         
-        <Chart data={this.state.chartData} />
+        <Chart ref="chart" startTime={this.state.startTime} endTime={this.state.endTime} searchKeyword={this.state.searchKeyword} />
       </div>
     );
-  }
-  componentDidMount() {
-    this.getBitcoinData();
-    this.getSearchData();
   }
   
   // Input handlers
@@ -104,27 +79,115 @@ class App extends Component {
     if (this.timeout) {
       clearTimeout(this.timeout);
     }
+    
     // Set new timeout
     this.timeout = setTimeout(() => {
-      //console.log(keyword);
-      this.searchKeyword = keyword;
-      this.getSearchData();
+      this.setState({searchKeyword: keyword},() => {
+        let chartComponent = this.refs["chart"];
+        chartComponent.getSearchData();
+      });
     },850);
   }
   handleStartDateChange(moment) {
     this.setState({startTime: moment},() => {
-      this.getBitcoinData();
-      this.getSearchData();
+      let chartComponent = this.refs["chart"];
+      chartComponent.getBitcoinData();
+      chartComponent.getSearchData();
+    });
+  }
+}
+
+
+
+
+
+
+class Chart extends Component {
+  constructor(props) {
+    super(props);
+    
+    // Chart.js defaults
+    ChartJs.defaults.global.elements.point.radius = 1;
+    ChartJs.scaleService.updateScaleDefaults('logarithmic', {
+      ticks: {
+        callback: function(tick, index, ticks) {
+          return tick.toLocaleString();
+        }
+      }
+    });
+    
+    // State
+    this.state = {
+      chartData: {
+        labels: [],
+        datasets: [{ 
+          label: "Bitcoin Price", 
+          data: [],
+          backgroundColor: "rgba(220,200,0,0.4)",
+          yAxisID: 'bitcoin'
+        },
+        { 
+          label: "", 
+          data: [],
+          backgroundColor: "rgba(0,127,255,0.4)",
+          yAxisID: 'search'
+        }]
+      }
+    };
+    
+    // Class Members
+    this.bitcoinLabels = [];
+    this.bitcoinData = [];
+    this.searchLabels = [];
+    this.searchData = [];
+  }
+  shouldComponentUpdate() {
+    return false;
+  }
+  render() {
+    return(
+      <div id="canvasContainer">
+        <canvas ref="chart" id="chart" width="400" height="140"></canvas>
+      </div>
+    );
+  }
+  componentDidMount() {
+    // Run initially
+    this.getBitcoinData();
+    this.getSearchData();
+  }
+  componentDidUpdate() {
+    // Re-draw the chart on updated data
+    if (this.chart) { this.chart.destroy(); }
+    this.chart = new ChartJs(this.refs["chart"], {
+      type: 'line',
+      data: this.state.chartData,
+      options: {
+        scales: { 
+          yAxes: [
+            { id: 'bitcoin', 
+              type: 'logarithmic', 
+              position: 'left'
+            },
+            { id: 'search', 
+              type: 'linear', 
+              position: 'right',
+              ticks: { 
+                min: 0,
+                max: 100,
+                stepSize:50 }
+            }
+          ] 
+        },
+      }
     });
   }
   
   // Chart Data and Update
-  // **** These should probably be pushed into the Chart component, it should handle fetching it's own data
-  //      Then we can pass in startDate to the component, but only update it on data change
   getBitcoinData() {
     // Data from Coindesk (see /routes/coindesk.js)
     // Add /api/ to start of endpoint for production    
-    var endpoint = "/coindesk/" + this.state.startTime.valueOf() + "-" + this.endTime.valueOf();
+    var endpoint = "/coindesk/" + this.props.startTime.valueOf() + "-" + this.props.endTime.valueOf();
     
     fetch(endpoint)
     .then(response => response.json())
@@ -142,7 +205,7 @@ class App extends Component {
   getSearchData() {
     // Data from Google Trends (see /routes/googletrendsapi.js)
     // Add /api/ to start of endpoint for production
-    var endpoint = "/googletrendsapi/" + encodeURIComponent(this.searchKeyword) + "/" + this.state.startTime.valueOf() + "-" + this.endTime.valueOf();
+    var endpoint = "/googletrendsapi/" + encodeURIComponent(this.props.searchKeyword) + "/" + this.props.startTime.valueOf() + "-" + this.props.endTime.valueOf();
     
     fetch(endpoint)
     .then(response => response.json())
@@ -168,7 +231,7 @@ class App extends Component {
     let chartData = this.state.chartData;
     chartData.labels = this.bitcoinLabels; // Use the dates from coindesk data as a base
     chartData.datasets[0].data = this.bitcoinData;
-    chartData.datasets[1].label = '"' + this.searchKeyword + '"';
+    chartData.datasets[1].label = '"' + this.props.searchKeyword + '"';
     chartData.datasets[1].data = [];
     
     // Find values for each of the dates from coindesk data
@@ -183,63 +246,7 @@ class App extends Component {
       }
       if (!match) { chartData.datasets[1].data.push(null); }
     });
-    this.setState({ chartData: chartData });
-  }
-}
-
-class Chart extends Component {
-  constructor(props) {
-    super(props);
-    
-    // Chart.js defaults
-    ChartJs.defaults.global.elements.point.radius = 1;
-    ChartJs.scaleService.updateScaleDefaults('logarithmic', {
-      ticks: {
-        callback: function(tick, index, ticks) {
-          return tick.toLocaleString();
-        }
-      }
-    });
-  }
-  shouldComponentUpdate(nextProps) {
-    // How do I get this thing to update initially, but not later on parent's state.startDate change?
-    // This component should only update when the data changes
-    console.log(this.props.data.datasets[1].data);
-    console.log(nextProps.data.datasets[1].data);
-    
-    return true;
-  }
-  render() {
-    return(
-      <div id="canvasContainer">
-        <canvas ref="chart" id="chart" width="400" height="140"></canvas>
-      </div>
-    );
-  }
-  componentDidUpdate() {
-    if (this.chart) { this.chart.destroy(); }
-    this.chart = new ChartJs(this.refs["chart"], {
-      type: 'line',
-      data: this.props.data,
-      options: {
-        scales: { 
-          yAxes: [
-            { id: 'bitcoin', 
-              type: 'logarithmic', 
-              position: 'left'
-            },
-            { id: 'search', 
-              type: 'linear', 
-              position: 'right',
-              ticks: { 
-                min: 0,
-                max: 100,
-                stepSize:50 }
-            }
-          ] 
-        },
-      }
-    });
+    this.setState({ chartData: chartData },() => this.forceUpdate());
   }
 }
 
