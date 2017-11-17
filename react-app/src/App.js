@@ -3,10 +3,10 @@ import logo from './logo.svg';
 import './App.css';
 import ChartJs from 'chart.js';
 import dateformat from 'dateformat';
-import DatePicker from 'react-datepicker';
+import DatePicker from 'react-date-picker';
 import moment from 'moment';
- 
-import 'react-datepicker/dist/react-datepicker.css';
+
+
 
 class App extends Component {
   constructor(props) {
@@ -41,13 +41,13 @@ class App extends Component {
             src="http://gerbus.ca:3000/static/media/logo.5d5d9eef.svg"
             alt="logo" />
           </div>
-          <h1 className="App-title">Bitcoin Price vs Google Search occurrence</h1>
+          <h1 className="App-title">Bitcoin Price vs Google Search frequency</h1>
         </header>
         
         <div className="container">
           <div className="row">
             <div className="col-md-4">
-              <p>Compare the price of Bitcoin (log scale, left axis) to the occurrence of a google search (right axis, peak set to 100)</p> 
+              <p>Compare the price of Bitcoin (left axis, log scale) to the world-wide frequency of a google search (right axis, peak set to 100)</p> 
               <div className="input-group">
                 <span className="input-group-addon">Search Keyword</span>
                 <input className="form-control" defaultValue="bitcoin bubble" onChange={event => this.handleKeyword(event.target.value)} />
@@ -64,6 +64,7 @@ class App extends Component {
                   dateformat="YYYY-MM-DD"
                 />
               </div>
+                
             </div>
           </div>
         </div>
