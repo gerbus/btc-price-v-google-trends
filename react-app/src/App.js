@@ -3,7 +3,8 @@ import logo from './logo.svg';
 import './App.css';
 import ChartJs from 'chart.js';
 import dateformat from 'dateformat';
-import DatePicker from 'react-date-picker';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
 import moment from 'moment';
 
 
