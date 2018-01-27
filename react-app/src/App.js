@@ -45,16 +45,20 @@ class App extends Component {
           <h1 className="App-title">Bitcoin Price vs Google Search frequency</h1>
         </header>
         
+        <p className="intro">Compare the price of Bitcoin (left axis, log scale) <br/>
+          to the world-wide frequency of a google search <br />
+          (right axis, peak set to 100)</p>
+        
         <div className="container">
-          <div className="row">
+            
+          <div className="row form-group">
             <div className="col-md-4">
-              <p>Compare the price of Bitcoin (left axis, log scale) to the world-wide frequency of a google search (right axis, peak set to 100)</p> 
               <div className="input-group">
                 <span className="input-group-addon">Search Keyword</span>
                 <input className="form-control" defaultValue="bitcoin bubble" onChange={event => this.handleKeyword(event.target.value)} />
               </div>
             </div>
-            <div className="col-md-4 col-md-offset-2">
+            <div className="col-md-4">
               <div className="input-group">
                 <span className="input-group-addon">Start Date</span>
                 <DatePicker
@@ -189,7 +193,7 @@ class Chart extends Component {
   getBitcoinData() {
     // Data from Coindesk (see /routes/coindesk.js)
     // Add /api/ to start of endpoint for production    
-    var endpoint = "/coindesk/" + this.props.startTime.valueOf() + "-" + this.props.endTime.valueOf();
+    var endpoint = "/api/coindesk/" + this.props.startTime.valueOf() + "-" + this.props.endTime.valueOf();
     
     fetch(endpoint)
     .then(response => response.json())
@@ -207,7 +211,9 @@ class Chart extends Component {
   getSearchData() {
     // Data from Google Trends (see /routes/googletrendsapi.js)
     // Add /api/ to start of endpoint for production
-    var endpoint = "/googletrendsapi/" + encodeURIComponent(this.props.searchKeyword) + "/" + this.props.startTime.valueOf() + "-" + this.props.endTime.valueOf();
+    
+    //** Sometimes the data is daily, sometimes weekly. How to know which? Do we have to parse dates? Damnit.
+    var endpoint = "/api/googletrendsapi/" + encodeURIComponent(this.props.searchKeyword) + "/" + this.props.startTime.valueOf() + "-" + this.props.endTime.valueOf();
     
     fetch(endpoint)
     .then(response => response.json())
