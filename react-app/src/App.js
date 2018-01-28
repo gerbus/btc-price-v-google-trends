@@ -54,9 +54,10 @@ class App extends Component {
           <div className="row form-group">
             <div className="col-md-4">
               <div className="input-group">
-                <span className="input-group-addon">Search Keyword</span>
+                <span className="input-group-addon">Search Keyword(s)</span>
                 <input className="form-control" defaultValue="bitcoin bubble" onChange={event => this.handleKeyword(event.target.value)} />
               </div>
+              <small>No need to press enter; just wait 850ms!</small>
             </div>
             <div className="col-md-4">
               <div className="input-group">
@@ -212,7 +213,11 @@ class Chart extends Component {
     // Data from Google Trends (see /routes/googletrendsapi.js)
     // Add /api/ to start of endpoint for production
     
-    //** Sometimes the data is daily, sometimes weekly. How to know which? Do we have to parse dates? Damnit.
+    //** Sometimes each data point is a day, sometimes a week, sometimes a month. Have to look at formattedTime property of returned data:
+    //    month resolution (default) => formattedTime: "Mar 2010"
+    //    week resolution (look for hyphen) => formattedTime: "Feb 3 - Feb 9 2013"
+    //    day resolution (look for comma) => formattedTime: "Jan 21, 2018"
+    
     var endpoint = "/api/googletrendsapi/" + encodeURIComponent(this.props.searchKeyword) + "/" + this.props.startTime.valueOf() + "-" + this.props.endTime.valueOf();
     
     fetch(endpoint)
@@ -222,9 +227,20 @@ class Chart extends Component {
       this.searchLabels = [];
       this.searchData = [];
       data.default.timelineData.map(item => {
-        let sunday = new Date(item.formattedAxisTime);
-        for (let d = 0; d < 7; d++) {
-          let day = new Date(sunday);
+        let n = 0;
+        if (item.formattedTime.includes(",")) {
+          // Each item is a day
+          n = 1;
+        } else if (item.formattedTime.includes("-")) {
+          // Each item is a week
+          n = 7;
+        } else {
+          // Each item is a month
+          n = 28; // for now, just use 28 days for a month
+        }
+        let start = new Date(item.formattedAxisTime);
+        for (let d = 0; d < n; d++) {
+          let day = new Date(start);
           day.setDate(day.getDate() + d);
           this.searchLabels.push(dateformat(day,"isoDate"));
           this.searchData.push(item.value[0]);
