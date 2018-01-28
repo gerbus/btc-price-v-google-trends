@@ -20,7 +20,7 @@ class App extends Component {
     
     // React component state
     this.state = {
-      searchKeyword: "bitcoin bubble",
+      searchKeyword: "bitcoin top",
       startTime: moment("2013-01-01","YYYY-MM-DD"),
       endTime: moment()
     };
@@ -29,33 +29,20 @@ class App extends Component {
     // See here for chart.js with react sample: https://tuespetre.github.io/react/responsive/2015/04/17/using-responsive-chart-js-charts-within-react.html
     return (
       <div className="App">
-        <header className="App-header">
-          <img
-            src="http://gerbus.ca/common/img/Gerb-4-transparent.png"
-            className="App-logo dance-right" 
-            alt="logo" />
-          <img 
-            src="http://78.media.tumblr.com/5620cf0579e7a55306ee3d08f97963f4/tumblr_ngonptcMpM1rrgn57o1_400.gif" 
-            className="App-logo rainbow-spiral" />
-          <div className="dance-left App-logo">
-          <img 
-            src="http://gerbus.ca:3000/static/media/logo.5d5d9eef.svg"
-            alt="logo" />
-          </div>
-          <h1 className="App-title">Bitcoin Price vs Google Search frequency</h1>
-        </header>
-        
-        <p className="intro">Compare the price of Bitcoin (left axis, log scale) <br/>
-          to the world-wide frequency of a google search <br />
-          (right axis, peak set to 100)</p>
         
         <div className="container">
-            
+          <div className="row">
+            <div className="col-sm-5">
+              <p className="intro"> Compare the price of Bitcoin (left axis, log scale) 
+                                    to the world-wide frequency of a google search
+                                    (right axis, peak set to 100)</p>
+            </div>
+          </div>
           <div className="row form-group">
             <div className="col-md-4">
               <div className="input-group">
                 <span className="input-group-addon">Search Keyword(s)</span>
-                <input className="form-control" defaultValue="bitcoin bubble" onChange={event => this.handleKeyword(event.target.value)} />
+                <input className="form-control" defaultValue={this.state.searchKeyword} onChange={event => this.handleKeyword(event.target.value)} />
               </div>
               <small>No need to press enter; just wait 850ms!</small>
             </div>
@@ -65,17 +52,17 @@ class App extends Component {
                 <DatePicker
                   selected={this.state.startTime}
                   onChange={this.handleStartDateChange}
-                  mindate={new Date("2012-01-01")}
+                  mindate={this.state.startTime}
                   maxdate={new Date()}
                   dateformat="YYYY-MM-DD"
                 />
               </div>
-                
             </div>
           </div>
         </div>
         
         <Chart ref="chart" startTime={this.state.startTime} endTime={this.state.endTime} searchKeyword={this.state.searchKeyword} />
+          
       </div>
     );
   }
@@ -125,6 +112,8 @@ class Chart extends Component {
     
     // State
     this.state = {
+      windowWidth: window.innerWidth,
+      windowHeight: window.innerHeight,
       chartData: {
         labels: [],
         datasets: [{ 
@@ -152,9 +141,16 @@ class Chart extends Component {
     return false;
   }
   render() {
+    let viewportRatio = this.state.windowHeight / this.state.windowWidth;
+    let width = 100;
+    let height = Math.floor(50 * viewportRatio);
+    if (height > 70) {
+      // Mobile max
+      height = 70;
+    }
     return(
       <div id="canvasContainer">
-        <canvas ref="chart" id="chart" width="400" height="140"></canvas>
+        <canvas ref="chart" id="chart" width={width} height={height} responsive="true"></canvas>
       </div>
     );
   }
@@ -174,7 +170,20 @@ class Chart extends Component {
           yAxes: [
             { id: 'bitcoin', 
               type: 'logarithmic', 
-              position: 'left'
+              position: 'left',
+              afterBuildTicks: function(chart) {
+                chart.ticks = [];
+                chart.ticks.push(10);
+                chart.ticks.push(50);
+                chart.ticks.push(100);
+                chart.ticks.push(500);
+                chart.ticks.push(1000);
+                chart.ticks.push(5000);
+                chart.ticks.push(10000);
+                chart.ticks.push(50000);
+                chart.ticks.push(100000);
+                chart.ticks.push(500000);
+              }
             },
             { id: 'search', 
               type: 'linear', 
@@ -182,7 +191,8 @@ class Chart extends Component {
               ticks: { 
                 min: 0,
                 max: 100,
-                stepSize:50 }
+                stepSize: 50 
+              }
             }
           ] 
         },
@@ -193,7 +203,10 @@ class Chart extends Component {
   // Chart Data and Update
   getBitcoinData() {
     // Data from Coindesk (see /routes/coindesk.js)
-    // Add /api/ to start of endpoint for production    
+    
+    // Development:
+    //var endpoint = "/coindesk/" + this.props.startTime.valueOf() + "-" + this.props.endTime.valueOf();
+    // Production:
     var endpoint = "/api/coindesk/" + this.props.startTime.valueOf() + "-" + this.props.endTime.valueOf();
     
     fetch(endpoint)
@@ -211,13 +224,15 @@ class Chart extends Component {
   }
   getSearchData() {
     // Data from Google Trends (see /routes/googletrendsapi.js)
-    // Add /api/ to start of endpoint for production
     
     //** Sometimes each data point is a day, sometimes a week, sometimes a month. Have to look at formattedTime property of returned data:
     //    month resolution (default) => formattedTime: "Mar 2010"
     //    week resolution (look for hyphen) => formattedTime: "Feb 3 - Feb 9 2013"
     //    day resolution (look for comma) => formattedTime: "Jan 21, 2018"
     
+    // Development:
+    //var endpoint = "/googletrendsapi/" + encodeURIComponent(this.props.searchKeyword) + "/" + this.props.startTime.valueOf() + "-" + this.props.endTime.valueOf();
+    // Production:
     var endpoint = "/api/googletrendsapi/" + encodeURIComponent(this.props.searchKeyword) + "/" + this.props.startTime.valueOf() + "-" + this.props.endTime.valueOf();
     
     fetch(endpoint)
