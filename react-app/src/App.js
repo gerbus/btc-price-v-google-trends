@@ -203,11 +203,7 @@ class Chart extends Component {
   // Chart Data and Update
   getBitcoinData() {
     // Data from Coindesk (see /routes/coindesk.js)
-    
-    // Development:
-    //var endpoint = "/coindesk/" + this.props.startTime.valueOf() + "-" + this.props.endTime.valueOf();
-    // Production:
-    var endpoint = "/api/coindesk/" + this.props.startTime.valueOf() + "-" + this.props.endTime.valueOf();
+    var endpoint = "http://gerbus.ca:3012/coindesk/" + this.props.startTime.valueOf() + "-" + this.props.endTime.valueOf();
     
     fetch(endpoint)
     .then(response => response.json())
@@ -229,11 +225,8 @@ class Chart extends Component {
     //    month resolution (default) => formattedTime: "Mar 2010"
     //    week resolution (look for hyphen) => formattedTime: "Feb 3 - Feb 9 2013"
     //    day resolution (look for comma) => formattedTime: "Jan 21, 2018"
-    
-    // Development:
-    //var endpoint = "/googletrendsapi/" + encodeURIComponent(this.props.searchKeyword) + "/" + this.props.startTime.valueOf() + "-" + this.props.endTime.valueOf();
-    // Production:
-    var endpoint = "/api/googletrendsapi/" + encodeURIComponent(this.props.searchKeyword) + "/" + this.props.startTime.valueOf() + "-" + this.props.endTime.valueOf();
+
+    var endpoint = "http://gerbus.ca:3012/googletrendsapi/" + encodeURIComponent(this.props.searchKeyword) + "/" + this.props.startTime.valueOf() + "-" + this.props.endTime.valueOf();
     
     fetch(endpoint)
     .then(response => response.json())
